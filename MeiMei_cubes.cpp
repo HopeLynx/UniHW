@@ -38,12 +38,7 @@ int solvation(int number_of_cubes, int up_to, int searching_for){
     // кол-во размещений = факториал(н) / факториал(н-м)
     // м - кол-во кубов , н - кол-во вариантов
     //long int cnt_of_options = factorial(up_to)/factorial(up_to);
-
     //кол-во строк в таблице = n в степени кол-ва переменных
-
-    // инициализация массива кол-ва вариантов на уровнях
-
-    // min,min+up_to-(up_to-1),....min+up_to-1,min+up_to  = базис
 
 
     // если смена на уровень выше - то прибавляем 1 или
@@ -96,13 +91,20 @@ int main()
     int up_to = 6;
     cout << "Enter number of cube sides: "; cin >> up_to; cout << endl;
 
-    int searching_for = 11;
-    cout << "Enter desired value of cubes sum: "; cin >> searching_for; cout << endl;
+    int searching_for_min = 11;
+    cout << "Enter desired value of cubes sum: "; cin >> searching_for_min; cout << endl;
 
-    int answer = solvation(number_of_cubes,up_to,searching_for);
+    int range = 0;
+    cout << "Enter view range to check: (0 for no range) "; cin >> range; cout << endl;
 
-    print_ans(answer);
-    print_approximate(answer,number_of_cubes,up_to);
+    for (int i = searching_for_min; i <= searching_for_min + range; i++){
+        int answer = solvation(number_of_cubes,up_to,i);
+        cout << "sum = " << i << endl;
+        print_ans(answer);
+        print_approximate(answer,number_of_cubes,up_to);
+        cout << endl;
+    }
+
 
     return 0;
 }
