@@ -37,6 +37,8 @@ avltree find (key_t x, avltree t) {
         return find (x, t->left);
     if (x > t->key)
         return find (x, t->right);
+    // no- warn stuff
+    return t;
 }
 
 avltree findmin (avltree t) {
@@ -133,9 +135,27 @@ int balance_factor(avltree t){
 }
 
 void fixheight(avltree t){
-    unsigned int hl = height(p->left);
-    unsigned int hr = height(p->right);
-    p->height = (hl>hr?hl:hr)+1;
+    unsigned int hl = height(t->left);
+    unsigned int hr = height(t->right);
+    t->height = (hl>hr?hl:hr)+1;
+}
+
+
+avltree balance(avltree t){
+    fixheight(t);
+    if( balance_factor(t)==2 )
+    {
+        if( balance_factor(t->right) < 0 )
+            t->right = SingleRotateWithRight(t->right);
+        return SingleRotateWithLeft(t);
+    }
+    if( balance_factor(t)==-2 )
+    {
+        if( balance_factor(t->left) > 0  )
+            t->left = SingleRotateWithLeft(t->left);
+        return SingleRotateWithRight(t);
+    }
+    return t; // балансировка не нужна
 }
 
 avltree removemin(avltree t){
@@ -144,27 +164,10 @@ avltree removemin(avltree t){
     return balance(t);
 }
 
-avltree balance(avltree t){
-    fixheight(t);
-    if( bfactor(t)==2 )
-    {
-        if( bfactor(t->right) < 0 )
-            t->right = SingleRotateWithRight(t->right);
-        return rotateleft(t);
-    }
-    if( bfactor(t)==-2 )
-    {
-        if( bfactor(t->left) > 0  )
-            t->left = SingleRotateWithLeft(t->left);
-        return rotateright(t);
-    }
-    return t; // балансировка не нужна
-}
-
-avltree remove(key_t x,avltree t){
-    if (t == NULL) return 0;
-    if (x < t->key) t->left = remove(x,t->left);
-    else if (x > t->key) t->right = remove(x,t->right);
+avltree remove1(key_t x,avltree t){
+    if (t == NULL) perror("no tree");
+    if (x < t->key) t->left = remove1(x,t->left);
+    else if (x > t->key) t->right = remove1(x,t->right);
     else {
         avltree q = t->left;
         avltree r = t->right;
