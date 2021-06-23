@@ -25,13 +25,13 @@ int my_mod(int num, int diver)  {
 
 class Big_Integer {
 private:
-    vector<int> slices;
+    vector <int> slices;
     int sign;
 
     //Настроиваемые параметры хранения большого числа
-    //Количество символов в строке, которые станут одной "чанкой"
+    //Количество символов в строке, которые станут одним "куском"
     static const int BASE = 9;
-    //Зависит от BASE (BASE_N = 10^BASE), используется при нормализации
+    //Зависит от BASE (BASE_N = N^BASE), используется при нормализации
     static const int BASE_N = 1000 * 1000 * 1000;
 
     // пример для того чтобы работало для двоичной системы счисления
@@ -39,12 +39,12 @@ private:
     //    static const int BASE_N = 2;
 
     //Служебные функции, делают вычисление “за кадром, для упрощения обработки промежуточных результатов”
-    Big_Integer _plus(Big_Integer &a);
-    Big_Integer _minus(Big_Integer &a);
-    Big_Integer _multi(Big_Integer &);
-    Big_Integer _simplemulti(Big_Integer &);
-    void _normalizationSigns();
-    void _normalizationChunks();
+    Big_Integer _plus(Big_Integer &num);
+    Big_Integer _minus(Big_Integer &num);
+    Big_Integer _multi(Big_Integer &num);
+    Big_Integer _simple_multi(Big_Integer &num);
+    void _normalization_with_signs();
+    void _normalization_slices();
     void _resize(int newsize);
 
 public:
@@ -53,22 +53,15 @@ public:
     Big_Integer operator * (Big_Integer);
     bool operator == (Big_Integer);
     bool operator != (Big_Integer);
-    bool operator <= (Big_Integer);
-    bool operator >= (Big_Integer);
-    bool operator < (Big_Integer);
-    bool operator > (Big_Integer);
 
     friend ostream & operator << (ostream &os, Big_Integer &num);
 
-    int getBASE() {
-        return this->BASE;
-    }
+    int getBASE() {return this->BASE;}
 
     //Конструктор, строку конвертирует в большое число
     Big_Integer(string str) {
         int i;
         if (BASE != 1) {
-            //Записываем с конца по BASE символов строки в чанки
             for (i = str.size() - BASE; i >= BASE - 1; i -= BASE) {
                 slices.push_back(stoi(str.substr(i, BASE)));
             }
@@ -78,8 +71,6 @@ public:
                 slices.push_back(stoi(str.substr(i, BASE)));
             }
         }
-
-        //Дошли до начала строки, тут ищем знак и записываем последнюю чанку
         if (str[0] == '-') {
             sign = -1;
             if (i + BASE - 1 != 0) {
@@ -93,52 +84,42 @@ public:
     }
 
     //Конструктор без аргументов - "пустое" положительное число
-    Big_Integer() {
-        sign = 1;
-    }
+    Big_Integer() {sign = 1;}
 };
 
-//Изменение размера массива с чанками
-void Big_Integer::_resize(int newSize) {
-    slices.resize(newSize);
-}
+//Изменение размера массива
+void Big_Integer::_resize(int newSize) {slices.resize(newSize);}
 
 /*
  * Функция нормализует большое число так, чтобы
- * во всех чанках лежали BASE-разрядные числа
+ * во всех кусках лежали BASE-разрядные числа
 */
-void Big_Integer::_normalizationChunks() {
-    int over = 0; //"Лишнее", которое будет кочевать в следующие чанки
-    for (int i = 0; i < slices.size() - 1; i++) {
-        slices[i] += over; //Прибавляем привесок от прошлых чанок
-        over = my_div(slices[i], BASE_N); //Считаем перевес в текущей чанке
-        slices[i] = my_mod(slices[i], BASE_N); //Выравниваем чанку по базе
+void Big_Integer::_normalization_slices() {
+    int over = 0;
+    for (unsigned int i = 0; i < slices.size() - 1; i++) {
+        slices[i] += over;
+        over = my_div(slices[i], BASE_N);
+        slices[i] = my_mod(slices[i], BASE_N);
     }
-
-    //Прибавляем перевес к последней чанке
     slices[slices.size() - 1] += over;
-    //Обрабатываем перевес в последней чанке
     if (slices[slices.size() - 1] / BASE_N) {
         over = my_div(slices[slices.size() - 1], BASE_N);
         slices[slices.size() - 1] = my_mod(slices[slices.size() - 1], BASE_N);
-        slices.push_back(over); //Создаем нову чанку с остатками
+        slices.push_back(over);
     }
-
     return;
 }
 
 //Функция нормализует большое число для печати так,
-//чтобы все чанки были положительными, но sign = -1(если число отрицательное)
-void Big_Integer::_normalizationSigns() {
-    //Если в последней чанке отрицательное число
+//чтобы все куски были положительными, но sign = -1(если число отрицательное)
+void Big_Integer::_normalization_with_signs() {
     if (slices[slices.size() - 1] < 0) {
-        sign = -sign; //Меняем знак числа
-        slices[0] = BASE_N - slices[0]; //Нормализуем первую чанку
+        sign = -sign;
+        slices[0] = BASE_N - slices[0];
         for (unsigned int i = 1; i < slices.size(); i++) {
-            slices[i] = (BASE_N - slices[i] - 1) % BASE_N; //Нормализуем ост. чанки
+            slices[i] = (BASE_N - slices[i] - 1) % BASE_N;
         }
     }
-
     //Убираем из числа нулевые кусочки
     int i = slices.size() - 1;
     while (slices[i] == 0) {
@@ -146,7 +127,6 @@ void Big_Integer::_normalizationSigns() {
             sign = 1;
             return;
         }
-
         slices.pop_back();
         i--;
     }
@@ -157,11 +137,9 @@ void Big_Integer::_normalizationSigns() {
 Big_Integer Big_Integer::_plus(Big_Integer &num) {
     Big_Integer res;
     res.sign = this->sign;
-
     for (unsigned int i = 0; i < this->slices.size(); i++) {
         res.slices.push_back(this->slices[i] + num.slices[i]);
     }
-
     return res;
 }
 
@@ -169,26 +147,21 @@ Big_Integer Big_Integer::_plus(Big_Integer &num) {
 Big_Integer Big_Integer::_minus(Big_Integer &num) {
     Big_Integer res;
     res.sign = this->sign;
-
     for (unsigned int i = 0; i < this->slices.size(); i++) {
         res.slices.push_back(this->slices[i] - num.slices[i]);
     }
-
     return res;
 }
 
 //Оператор +, выполняет корректное сложение больших чисел
 Big_Integer Big_Integer::operator + (Big_Integer &num) {
     Big_Integer res;
-
-    //Приводим размер чанок обоих чисел
     if (this->slices.size() > num.slices.size()) {
         num._resize(slices.size());
     }
     else {
         (*this)._resize(num.slices.size());
     }
-
     //Выполняем операцию в зависимости от знаков чисел
     if (sign == num.sign) {
         res = (*this)._plus(num);
@@ -196,24 +169,20 @@ Big_Integer Big_Integer::operator + (Big_Integer &num) {
     else {
         res = (*this)._minus(num);
     }
-
     //Нормализуем результат
-    res._normalizationChunks();
+    res._normalization_slices();
     return res;
 }
 
 //Оператор -, выполняет корректное вычитание
 Big_Integer Big_Integer::operator - (Big_Integer &num) {
     Big_Integer res;
-
-    //Приводим размер чанок
     if (this->slices.size() > num.slices.size()) {
         num._resize(slices.size());
     }
     else {
         (*this)._resize(num.slices.size());
     }
-
     //В зависимости от знаков, выполняем нужное действие
     if (sign != num.sign) {
         res = (*this)._plus(num);
@@ -221,25 +190,64 @@ Big_Integer Big_Integer::operator - (Big_Integer &num) {
     else {
         res = (*this)._minus(num);
     }
-
     //Нормализуем результат
-    res._normalizationChunks();
+    res._normalization_slices();
     return res;
 }
 
-bool Big_Integer::operator == (Big_Integer num) {
-    num._normalizationChunks();
-    num._normalizationSigns();
-    (*this)._normalizationChunks();
-    (*this)._normalizationSigns();
+//Функция умножения больших чисел
+Big_Integer Big_Integer::_simple_multi(Big_Integer &num) {
+    Big_Integer result;
 
+    result._resize(2 * this->slices.size());
+    result.sign = this->sign;
+
+    for (unsigned int i = 0; i < this->slices.size(); i++) {
+        for (unsigned int j = 0; j < num.slices.size(); j++) {
+            result.slices[i + j] += this->slices[i] * num.slices[j];
+        }
+    }
+
+    result._normalization_slices();
+    return result;
+}
+
+//Функция приводит большие числа к нужному размеру
+Big_Integer Big_Integer::_multi(Big_Integer &num) {
+    auto maxSize = max(this->slices.size(), num.slices.size());
+    unsigned int newSize = 1;
+    while (newSize < maxSize) {
+        newSize *= 2;
+    }
+    (*this)._resize(newSize);
+    num._resize(newSize);
+    return (*this)._simple_multi(num);
+}
+
+Big_Integer Big_Integer::operator * (Big_Integer num) {
+    Big_Integer result;
+    result = (*this)._multi(num);
+    result._normalization_slices();
+    if (this->sign == num.sign) {
+        result.sign = 1;
+    }
+    else {
+        result.sign = -1;
+    }
+    return result;
+}
+
+bool Big_Integer::operator == (Big_Integer num) {
+    num._normalization_slices();
+    num._normalization_with_signs();
+    (*this)._normalization_slices();
+    (*this)._normalization_with_signs();
     if (this->sign == num.sign) {
         //Если числа разного размера, то они не равны
         if (this->slices.size() != num.slices.size()) {
             return false;
         }
-
-        //Сравнить почанково
+        //Сравнить покусочно
         for (int i = this->slices.size() - 1; i >= 0; i--) {
             if (this->slices[i] != num.slices[i]) {
                 return false;
@@ -254,53 +262,25 @@ bool Big_Integer::operator == (Big_Integer num) {
 }
 
 bool Big_Integer::operator != (Big_Integer num) {
-    num._normalizationChunks();
-    num._normalizationSigns();
-    (*this)._normalizationChunks();
-    (*this)._normalizationSigns();
-
-    if (this->sign == num.sign) {
-        //Если числа разного размера, то они не равны
-        if (this->slices.size() != num.slices.size()) {
-            return true;
-        }
-
-        //Сравнить почанково
-        for (int i = this->slices.size() - 1; i >= 0; i--) {
-            if (this->slices[i] != num.slices[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
-    //Если знаки не равны, то и числа не равны
-    else {
-        return true;
-    }
+   return !(*this == num);
 }
 
 //Перегрузка оператора << для вывода в поток
 ostream & operator << (ostream &os, Big_Integer &num) {
-    num._normalizationSigns();
-
+    num._normalization_with_signs();
     if (num.sign == -1) {
         os << '-';
     }
-
     os << num.slices[num.slices.size() - 1];
-
     for (int i = num.slices.size() - 2; i >= 0; i--) {
         os << setw(num.getBASE()) << setfill('0') << num.slices[i];
     }
-
     return os;
 }
 
 int main() {
-//    BigNumber n1("-200000000000000000000000000000000000000000000000000000000000010");
-//    BigNumber n2("-20");
-    Big_Integer n1("1010");
-    Big_Integer n2("1");
+    Big_Integer n1("-200000000000000000000000000000000000000000000000000000000000010");
+    Big_Integer n2("-20");
     Big_Integer n3 = n1 + n2;
     cout << n3 << endl;
 
